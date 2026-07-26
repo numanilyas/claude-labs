@@ -5,7 +5,7 @@ hide:
 
 # Claude Labs
 
-**Twenty-two short labs. Ten minutes each. Nothing you can't try immediately.**
+**Thirty-two short labs. Ten minutes each. Nothing you can't try immediately.**
 
 This is not a course about how large language models work. It is a set of
 things to *do*, in order, each producing something you can look at and judge.
@@ -36,6 +36,18 @@ thing forty times on their own work.
 
     [:octicons-arrow-right-24: Start the developer track](dev/index.md)
 
+-   :material-database-outline:{ .lg .middle } **Data Track**
+
+    ---
+
+    Ten labs on MySQL and Python, written for people who live in
+    spreadsheets and have hit the ceiling. Install a database, load a file
+    into it, ask it questions, learn the three ways a clean-looking query
+    gives you a wrong total, then wrap the whole thing in a script that
+    refuses to run when the numbers don't tie.
+
+    [:octicons-arrow-right-24: Start the data track](data/index.md)
+
 </div>
 
 ## How a lab works
@@ -65,6 +77,8 @@ confusing ways.
 - A **Claude Pro** subscription (or higher). The free plan won't run most of these.
 - The **Claude desktop app**, for anything involving Cowork.
 - For the developer track: a terminal, git, and a repository you don't mind touching.
+- For the data track: a laptop you can install software on. Nothing there needs
+  Pro — MySQL and Python are free and Claude's role is advisory.
 
 ## A note on the practice data
 

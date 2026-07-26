@@ -1,9 +1,10 @@
 # Claude Labs
 
-Short, hands-on labs for getting real work done with Claude. Two tracks:
+Short, hands-on labs for getting real work done with Claude. Three tracks:
 
 - **Finance track** — 12 labs, ~2 hours, aimed at accounting and finance staff on a Claude Pro plan
 - **Developer track** — 10 labs, aimed at working software engineers
+- **Data track** — 10 labs on MySQL and Python, aimed at finance people who have outgrown spreadsheets
 
 Every lab is one page, about ten minutes, and ends with the participant running
 the same thing on their own file. All practice data is synthetic.
@@ -77,8 +78,12 @@ pip install openpyxl reportlab
 python build_data.py
 ```
 
-The script asserts that the bank reconciliation actually balances, so it will
-fail loudly rather than ship a broken exercise.
+The script asserts that the bank reconciliation actually balances and that
+every planted problem in the sample MySQL database is still where the Data
+Track says it is, so it fails loudly rather than shipping a broken exercise.
+
+It also writes `docs/files/db/northwind-setup.sql`, the sample database for the
+Data Track, derived from the same CSVs so the figures agree across tracks.
 
 ---
 
@@ -91,15 +96,18 @@ docs/
   how-to-run-a-session.md  for whoever is teaching
   finance/                 12 labs
   dev/                     10 labs
+  data/                    10 labs (MySQL + Python)
   cheatsheet.md            one-page reference
   prompt-library.md        every prompt in the curriculum, in one place
   sample-data.md           download index + what's wrong with each file
   facilitator.md           answer keys
   files/                   the synthetic data pack
+  files/db/                MySQL setup script + the Python scripts from labs 7-9
 build_data.py              regenerates docs/files/
 mkdocs.yml                 site config and navigation
 ```
 
-To add a lab: drop a markdown file in `docs/finance/` or `docs/dev/`, then add
+To add a lab: drop a markdown file in `docs/finance/`, `docs/dev/` or
+`docs/data/`, then add
 it to the `nav:` block in `mkdocs.yml`. The build runs with `--strict`, so a
 broken internal link fails the deploy instead of shipping quietly.

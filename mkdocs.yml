@@ -136,6 +136,20 @@ nav:
           - dev/08-subagents-and-hooks.md
           - dev/09-mcp-server.md
           - dev/10-agent-sdk.md
+  - Data Track:
+      - data/index.md
+      - The database:
+          - data/01-install-mysql.md
+          - data/02-load-the-data.md
+          - data/03-first-queries.md
+          - data/04-group-and-total.md
+          - data/05-one-table-is-not-enough.md
+          - data/06-queries-that-lie.md
+      - Python on top:
+          - data/07-install-python.md
+          - data/08-query-to-spreadsheet.md
+          - data/09-month-end-script.md
+          - data/10-sql-or-python.md
   - Reference:
       - cheatsheet.md
       - prompt-library.md

@@ -268,3 +268,141 @@ Square brackets mean *replace this*.
     Find functions in [package] that aren't covered by tests. Rank them
     by how much damage a silent failure would do, not by line count.
     ```
+
+---
+
+## Databases and Python
+
+!!! example prompt "Design a table for a file you're about to import"
+
+    ```text
+    I want to load a CSV into MySQL 8.4. Here are the header row and
+    the first five data rows:
+
+    [paste them]
+
+    Give me:
+    1. A CREATE TABLE statement with sensible column types and
+       lengths. Use DECIMAL for anything that is money - tell me the
+       precision and scale you chose and why.
+    2. The LOAD DATA LOCAL INFILE statement to match.
+    3. A short list of what will break if the file has blank cells,
+       dates in a different format, or thousands separators in the
+       numbers.
+
+    Explain the type choices in one line each. Assume I know
+    accounting and not databases.
+    ```
+
+!!! example prompt "Write the query, then explain it"
+
+    ```text
+    MySQL 8.4. I have a table called [name] with these columns:
+
+    [paste them]
+
+    Write me a query that [the question in plain English].
+
+    Then explain the query line by line in plain English, and tell me
+    one way it could give me a misleading answer.
+    ```
+
+!!! example prompt "The query review — before a number goes out"
+
+    ```text
+    Review this MySQL query. It's going into a report that finance
+    will send out, so I need to know how it could be wrong, not
+    whether it runs.
+
+    [paste your query]
+
+    The tables are:
+    [paste the output of SHOW CREATE TABLE for each one]
+
+    Tell me specifically:
+    - Could any JOIN drop rows? Which, and what would that do to the
+      totals?
+    - Does any filter behave differently on NULL or empty values?
+    - Could any join produce more rows than it started with and
+      inflate a SUM?
+    - What single query should I run as a control total to prove this
+      one is complete?
+
+    Don't rewrite it yet. Just tell me what's at risk.
+    ```
+
+!!! example prompt "Normalise a flat export"
+
+    ```text
+    I'm an accountant learning MySQL. Here is a flat spreadsheet
+    export - header row plus five sample rows:
+
+    [paste them]
+
+    Show me how you'd split this into proper tables. For each one:
+    the CREATE TABLE statement, what its primary key is and why, and
+    which columns become foreign keys.
+
+    Then give me the JOIN that puts it back together so the result
+    looks like my original spreadsheet, and a query that proves the
+    row count and column totals are unchanged.
+
+    Be honest about anything in my data that makes this awkward.
+    ```
+
+!!! example prompt "Make the spreadsheet output presentable"
+
+    ```text
+    Here's a Python script that runs MySQL queries and writes them to
+    an Excel file with pandas:
+
+    [paste the script]
+
+    Change it so the output actually looks like a finance deliverable:
+    - Currency format with thousands separators on the money columns
+    - Dates as dd/mm/yyyy
+    - Bold header row, frozen top row, columns wide enough to read
+    - A totals row at the bottom of each sheet
+
+    Use openpyxl. Keep the tie-out assertion exactly where it is and
+    explain any change you make to it.
+
+    Show me the whole file, not a diff.
+    ```
+
+!!! example prompt "SQL, Python, or leave it alone"
+
+    ```text
+    I do this task every month by hand:
+
+    [describe it - where the data comes from, what you do to it, what
+    you produce, who gets it]
+
+    I have MySQL 8.4 and Python with pandas available.
+
+    Tell me:
+    1. Which parts of this should be a SQL query and which should be
+       Python, and why for each
+    2. Which parts should stay manual, if any, and why
+    3. What could go wrong if this ran unattended, and what check
+       would catch each one
+
+    Be blunt about anything that isn't worth automating.
+    ```
+
+!!! example prompt "The install error"
+
+    ```text
+    I'm installing [MySQL 8.4 / Python 3.14] on [macOS / Windows] and
+    I'm stuck.
+
+    What I ran:
+    [paste the exact command]
+
+    What I got back:
+    [paste the exact error, all of it]
+
+    I'm new to this, so tell me what the error actually means before
+    you tell me what to type, and explain anything you want me to run
+    before I run it.
+    ```

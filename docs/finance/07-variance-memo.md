@@ -72,7 +72,7 @@ Three drivers, all of which should be in its table:
 Partly offset by underspend in Sales contract labour (April, −6,696) and
 Operations travel (June, −3,510).
 
-The interesting line for the memo: **those three drivers total 44,999 — more
+The interesting line for the memo: **those three drivers total 45,000 — more
 than the entire 35,110 overspend.** Everything else in the business came in
 under. That's a much better opening sentence than "opex was 2.2% over."
 

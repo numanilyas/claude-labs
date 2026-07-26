@@ -23,7 +23,7 @@ connect that folder to Cowork in Lab 4.
 
 ### [messy-pl-q2-fy26.xlsx](files/messy-pl-q2-fy26.xlsx)
 
-Q2 P&L, as exported by a system that hates you. Used in **Lab 4**.
+Q2 P&L, as exported by a system that hates you. Used in **finance Lab 4**.
 
 What's wrong with it, deliberately:
 
@@ -43,7 +43,7 @@ The subtotals do all foot correctly. The duplicate row is the trap.
 
 ### [bank-statement-june-2026.pdf](files/bank-statement-june-2026.pdf) + [general-ledger-june-2026.csv](files/general-ledger-june-2026.csv)
 
-June 2026, same cash account, two sources that don't agree. Used in **Lab 6**.
+June 2026, same cash account, two sources that don't agree. Used in **finance Lab 6**.
 
 | | |
 |---|---|
@@ -59,7 +59,7 @@ the [facilitator notes](facilitator.md) — don't read it before you've tried.
 
 ### [invoices.zip](files/invoices.zip)
 
-Five vendor invoices as PDFs, five different layouts. Used in **Lab 5**.
+Five vendor invoices as PDFs, five different layouts. Used in **finance Lab 5**.
 Grand total **165,283.50**.
 
 Between them they cover: an international supplier with VAT, two invoices with
@@ -75,8 +75,8 @@ no PO number, one with unusually short terms, and three different billing bases
 
 ### [budget-vs-actual-q2-fy26.csv](files/budget-vs-actual-q2-fy26.csv)
 
-129 rows. Q2 opex by month, department and account. Used in **Labs 2, 3, 7
-and 11**.
+129 rows. Q2 opex by month, department and account. Used in **finance Labs 2,
+3, 7 and 11**, and in **data Labs 2, 4, 5 and 9**.
 
 | | |
 |---|---|
@@ -95,7 +95,42 @@ department**, which is the trap in Lab 11.
 
 34 open invoices across 10 customers, aged at 30 June 2026. Total
 **1,096,352.29**, of which **116,829.32** is over 90 days. Spare data for
-Lab 10 and for your own experiments.
+finance Lab 10, and the source of the `invoices` table used throughout the
+data track.
+
+---
+
+### [db/northwind-setup.sql](files/db/northwind-setup.sql)
+
+The sample MySQL database for the **Data Track**. Run it with
+`SOURCE northwind-setup.sql` and it creates a `northwind` database with four
+tables, three of them populated. Same fictional company, same figures as the
+files above.
+
+| Table | Rows | What it is |
+|---|---|---|
+| `customers` | 10 | Customer master, with regions, credit limits and account managers |
+| `invoices` | 34 | The AR aging above, as a proper table. Total **1,096,352.29** |
+| `gl_entries` | 30 | The June cash ledger above, deliberately denormalised |
+| `budget_actual_raw` | 0 | Empty on purpose — Lab 2 imports the budget CSV into it |
+
+What's deliberately wrong, and where it's used:
+
+- **`invoices.customer_id` is `NULL` on INV-4391** (22,010.93, bucket 90+). An
+  `INNER JOIN` to `customers` drops it, so AR comes out at 1,074,341.36 instead
+  of 1,096,352.29 and the 90+ bucket is understated by 19%. **Lab 6.**
+- **`customers.region` is `NULL` for two customers and `''` for a third**, so
+  `WHERE region IS NULL` finds two of the three. **Lab 6.**
+- **`gl_entries` repeats `account_name` on every row** — the denormalisation
+  that Lab 5 exists to explain.
+- **Cheque #10476 is posted twice** (JE-2610 and JE-2611, 14,200.00 each). The
+  same duplicate the bank rec in Lab 6 of the finance track turns up, findable
+  here with one `HAVING COUNT(*) > 1`. **Lab 4.**
+
+The three Python scripts from Labs 7 to 9 are alongside it:
+[`first_query.py`](files/db/first_query.py),
+[`ar_report.py`](files/db/ar_report.py),
+[`month_end.py`](files/db/month_end.py).
 
 </div>
 
@@ -108,6 +143,11 @@ different numbers, a different company name, or more transactions:
 pip install openpyxl reportlab
 python build_data.py
 ```
+
+The script also writes the MySQL setup script, asserting as it goes that the
+AR total, the orphaned invoice, the 90+ bucket, the over-credit-limit customer
+list and the duplicate cheque are all still where the Data Track says they
+are.
 
 The script asserts that the bank reconciliation balances before it writes
 anything, so it fails loudly rather than shipping a broken exercise.

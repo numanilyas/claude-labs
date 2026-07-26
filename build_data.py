@@ -356,7 +356,7 @@ def build_ledger_and_bank():
     # ---- write GL csv ----
     gl_path = os.path.join(OUT, "general-ledger-june-2026.csv")
     with open(gl_path, "w", newline="") as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(["Entry No", "Date", "Account", "Account Name",
                     "Description", "Reference", "Debit", "Credit", "Memo"])
         bal = OPENING
@@ -493,7 +493,7 @@ def build_budget_actual():
 
     path = os.path.join(OUT, "budget-vs-actual-q2-fy26.csv")
     with open(path, "w", newline="") as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(["Month", "Department", "Account", "Budget", "Actual"])
         for m in months:
             for dept in depts:
@@ -535,7 +535,7 @@ def build_ar_aging():
                          f"{amt:.2f}", days - 30 if days > 30 else 0, bucket])
     rows.sort(key=lambda r: (r[1], r[2]))
     with open(path, "w", newline="") as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(["Invoice", "Customer", "Invoice Date", "Due Date",
                     "Amount", "Days Past Due", "Aging Bucket"])
         w.writerows(rows)
@@ -665,12 +665,252 @@ def build_invoices():
     return paths
 
 
+# ---------------------------------------------------------------------------
+# 7. MySQL sample database  ->  docs/files/db/northwind-setup.sql
+#
+# Derived from the CSVs above so every figure in the Data Track ties back to
+# the figures in the Finance Track. Deliberate problems, planted on purpose:
+#
+#   * invoices.customer_id is NULL for INV-4391 (22,010.93). An INNER JOIN to
+#     customers silently drops it, so the AR total comes out 22,010.93 light.
+#   * customers.region is NULL for two customers and '' (empty string) for a
+#     third, so `WHERE region IS NULL` finds two of the three.
+#   * gl_entries carries the duplicate cheque #10476 posting (JE-2610 and
+#     JE-2611) that the Finance Track bank rec turns up.
+#   * budget_actual_raw is created empty and denormalised - the learner
+#     imports the CSV into it, then normalises it themselves.
+# ---------------------------------------------------------------------------
+
+DB_ORPHAN_INVOICE = "INV-4391"          # customer_id deliberately left NULL
+
+CUSTOMER_MASTER = [
+    # id,     name,                     region,  terms, credit limit, manager
+    ("C001", "Argent Retail Group",     "North",   30, 100000.00, "R. Aldridge"),
+    ("C002", "Brightwater Industries",  "South",   30, 150000.00, "R. Aldridge"),
+    ("C003", "Copperfield & Sons",      None,      30, 100000.00, "M. Okafor"),
+    ("C004", "Dunmore Wholesale",       "East",    30, 150000.00, "M. Okafor"),
+    ("C005", "Eastvale Distribution",   "East",    30, 150000.00, "M. Okafor"),
+    ("C006", "Fairlight Mercantile",    "West",    30, 125000.00, "S. K. Rao"),
+    ("C007", "Granite Bay Outfitters",  "",        30, 100000.00, "S. K. Rao"),
+    ("C008", "Holloway Supply Co",      "North",   30, 125000.00, "R. Aldridge"),
+    ("C009", "Ironwood Partners",       None,      30, 100000.00, "S. K. Rao"),
+    ("C010", "Juniper Mercantile",      "South",   30, 125000.00, "M. Okafor"),
+]
+
+# CSV customer strings are upper case; map them onto the master above.
+_CUST_BY_UPPER = {c[1].upper(): c[0] for c in CUSTOMER_MASTER}
+
+
+def _sqlstr(v):
+    """Render a Python value as a MySQL literal."""
+    if v is None:
+        return "NULL"
+    if isinstance(v, (int, float)):
+        return str(v)
+    return "'" + str(v).replace("\\", "\\\\").replace("'", "''") + "'"
+
+
+def build_database():
+    import csv as _csv
+    from decimal import Decimal
+
+    db_dir = os.path.join(OUT, "db")
+    os.makedirs(db_dir, exist_ok=True)
+    path = os.path.join(db_dir, "northwind-setup.sql")
+
+    ar = list(_csv.DictReader(open(os.path.join(OUT, "ar-aging-june-2026.csv"),
+                                   encoding="utf-8")))
+    gl = list(_csv.DictReader(open(os.path.join(OUT, "general-ledger-june-2026.csv"),
+                                   encoding="utf-8")))
+
+    # ---- invoices -------------------------------------------------------
+    invoices = []
+    for r in ar:
+        cid = _CUST_BY_UPPER[r["Customer"].strip().upper()]
+        if r["Invoice"] == DB_ORPHAN_INVOICE:
+            cid = None                       # the planted orphan
+        invoices.append((r["Invoice"], cid, r["Invoice Date"], r["Due Date"],
+                         Decimal(r["Amount"]), int(r["Days Past Due"]),
+                         r["Aging Bucket"]))
+
+    total_ar = sum(i[4] for i in invoices)
+    joined_ar = sum(i[4] for i in invoices if i[1] is not None)
+    orphan_amt = total_ar - joined_ar
+
+    assert len(invoices) == 34, "expected 34 invoices"
+    assert total_ar == Decimal("1096352.29"), f"AR total moved: {total_ar}"
+    assert orphan_amt == Decimal("22010.93"), f"orphan amount moved: {orphan_amt}"
+    assert joined_ar == Decimal("1074341.36"), f"joined AR moved: {joined_ar}"
+
+    over90 = sum(i[4] for i in invoices if i[6] == "90+")
+    over90_joined = sum(i[4] for i in invoices if i[6] == "90+" and i[1] is not None)
+    assert over90 == Decimal("116829.32"), f"90+ total moved: {over90}"
+    assert over90_joined == Decimal("94818.39"), f"90+ joined moved: {over90_joined}"
+
+    # ---- credit limits: exactly three customers must be over -------------
+    exposure = {}
+    for inv in invoices:
+        if inv[1]:
+            exposure[inv[1]] = exposure.get(inv[1], Decimal("0")) + inv[4]
+    over_limit = sorted(c[0] for c in CUSTOMER_MASTER
+                        if exposure.get(c[0], Decimal("0")) > Decimal(str(c[4])))
+    assert over_limit == ["C003", "C004", "C009"], f"over-limit set moved: {over_limit}"
+
+    # ---- region nulls ----------------------------------------------------
+    n_null = sum(1 for c in CUSTOMER_MASTER if c[2] is None)
+    n_blank = sum(1 for c in CUSTOMER_MASTER if c[2] == "")
+    assert (n_null, n_blank) == (2, 1), "region trap moved"
+
+    # ---- gl entries ------------------------------------------------------
+    gl_rows = []
+    for r in gl:
+        gl_rows.append((r["Entry No"], r["Date"], r["Account"], r["Account Name"],
+                        r["Description"], r["Reference"],
+                        Decimal(r["Debit"]) if r["Debit"] else None,
+                        Decimal(r["Credit"]) if r["Credit"] else None,
+                        r["Memo"] or None))
+    assert len(gl_rows) == 30, "expected 30 GL rows"
+
+    dup_refs = {}
+    for g in gl_rows:
+        if g[7] is not None:
+            dup_refs.setdefault(g[5], []).append(g[7])
+    dups = {k: v for k, v in dup_refs.items() if len(v) > 1 and k.startswith("CHK")}
+    assert list(dups) == ["CHK10476"], f"duplicate cheque trap moved: {list(dups)}"
+    assert sum(dups["CHK10476"]) == Decimal("28400.00")
+
+    gl_debits = sum(g[6] for g in gl_rows if g[6])
+    gl_credits = sum(g[7] for g in gl_rows if g[7])
+
+    # ---- write the script ------------------------------------------------
+    L = []
+    w = L.append
+    w("-- Northwind Trading Co. - sample database for the Claude Labs Data Track")
+    w("-- Fictional data. Generated by build_data.py - do not edit by hand.")
+    w("-- Tested against MySQL 8.x. Run with:  SOURCE northwind-setup.sql")
+    w("")
+    w("DROP DATABASE IF EXISTS northwind;")
+    w("CREATE DATABASE northwind;")
+    w("USE northwind;")
+    w("")
+    w("-- ---------------------------------------------------------------")
+    w("-- Customer master. One row per customer - the whole point of a")
+    w("-- relational database is that this name is stored exactly once.")
+    w("-- ---------------------------------------------------------------")
+    w("CREATE TABLE customers (")
+    w("  customer_id        CHAR(4)       NOT NULL,")
+    w("  customer_name      VARCHAR(80)   NOT NULL,")
+    w("  region             VARCHAR(20)       NULL,")
+    w("  payment_terms_days INT           NOT NULL DEFAULT 30,")
+    w("  credit_limit       DECIMAL(12,2) NOT NULL,")
+    w("  account_manager    VARCHAR(40)       NULL,")
+    w("  PRIMARY KEY (customer_id)")
+    w(") ENGINE=InnoDB;")
+    w("")
+    w("INSERT INTO customers")
+    w("  (customer_id, customer_name, region, payment_terms_days, credit_limit, account_manager)")
+    w("VALUES")
+    vals = [
+        "  (%s, %s, %s, %d, %.2f, %s)" % (_sqlstr(c[0]), _sqlstr(c[1]),
+                                          _sqlstr(c[2]), c[3], c[4], _sqlstr(c[5]))
+        for c in CUSTOMER_MASTER
+    ]
+    w(",\n".join(vals) + ";")
+    w("")
+    w("-- ---------------------------------------------------------------")
+    w("-- Open sales invoices at 30 June 2026. customer_id is a foreign key")
+    w("-- back to customers - and it is NULL on one row, which is on purpose.")
+    w("-- ---------------------------------------------------------------")
+    w("CREATE TABLE invoices (")
+    w("  invoice_no     VARCHAR(12)   NOT NULL,")
+    w("  customer_id    CHAR(4)           NULL,")
+    w("  invoice_date   DATE          NOT NULL,")
+    w("  due_date       DATE          NOT NULL,")
+    w("  amount         DECIMAL(12,2) NOT NULL,")
+    w("  days_past_due  INT           NOT NULL,")
+    w("  aging_bucket   VARCHAR(10)   NOT NULL,")
+    w("  PRIMARY KEY (invoice_no),")
+    w("  CONSTRAINT fk_invoices_customer")
+    w("    FOREIGN KEY (customer_id) REFERENCES customers (customer_id)")
+    w(") ENGINE=InnoDB;")
+    w("")
+    w("INSERT INTO invoices")
+    w("  (invoice_no, customer_id, invoice_date, due_date, amount, days_past_due, aging_bucket)")
+    w("VALUES")
+    vals = [
+        "  (%s, %s, %s, %s, %s, %d, %s)" % (_sqlstr(i[0]), _sqlstr(i[1]),
+                                            _sqlstr(i[2]), _sqlstr(i[3]),
+                                            f"{i[4]:.2f}", i[5], _sqlstr(i[6]))
+        for i in invoices
+    ]
+    w(",\n".join(vals) + ";")
+    w("")
+    w("-- ---------------------------------------------------------------")
+    w("-- June cash ledger. Note account_name is repeated on every single")
+    w("-- row - that is what a denormalised table looks like.")
+    w("-- ---------------------------------------------------------------")
+    w("CREATE TABLE gl_entries (")
+    w("  entry_no     VARCHAR(10)   NOT NULL,")
+    w("  entry_date   DATE          NOT NULL,")
+    w("  account_code VARCHAR(10)   NOT NULL,")
+    w("  account_name VARCHAR(60)   NOT NULL,")
+    w("  description  VARCHAR(120)  NOT NULL,")
+    w("  reference    VARCHAR(20)       NULL,")
+    w("  debit        DECIMAL(12,2)     NULL,")
+    w("  credit       DECIMAL(12,2)     NULL,")
+    w("  memo         VARCHAR(120)      NULL,")
+    w("  PRIMARY KEY (entry_no)")
+    w(") ENGINE=InnoDB;")
+    w("")
+    w("INSERT INTO gl_entries")
+    w("  (entry_no, entry_date, account_code, account_name, description, reference, debit, credit, memo)")
+    w("VALUES")
+    vals = []
+    for g in gl_rows:
+        vals.append("  (%s, %s, %s, %s, %s, %s, %s, %s, %s)" % (
+            _sqlstr(g[0]), _sqlstr(g[1]), _sqlstr(g[2]), _sqlstr(g[3]),
+            _sqlstr(g[4]), _sqlstr(g[5]),
+            "NULL" if g[6] is None else f"{g[6]:.2f}",
+            "NULL" if g[7] is None else f"{g[7]:.2f}",
+            _sqlstr(g[8])))
+    w(",\n".join(vals) + ";")
+    w("")
+    w("-- ---------------------------------------------------------------")
+    w("-- Empty on purpose. Lab 2 imports budget-vs-actual-q2-fy26.csv into")
+    w("-- this table; Lab 5 splits it into proper tables.")
+    w("-- ---------------------------------------------------------------")
+    w("CREATE TABLE budget_actual_raw (")
+    w("  month      VARCHAR(7)    NOT NULL,")
+    w("  department VARCHAR(40)   NOT NULL,")
+    w("  account    VARCHAR(60)   NOT NULL,")
+    w("  budget     DECIMAL(12,2) NOT NULL,")
+    w("  actual     DECIMAL(12,2) NOT NULL")
+    w(") ENGINE=InnoDB;")
+    w("")
+    w("SELECT 'northwind is ready' AS status,")
+    w("       (SELECT COUNT(*) FROM customers)  AS customers,")
+    w("       (SELECT COUNT(*) FROM invoices)   AS invoices,")
+    w("       (SELECT COUNT(*) FROM gl_entries) AS gl_entries;")
+    w("")
+
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(L))
+
+    return path, {
+        "total_ar": total_ar, "joined_ar": joined_ar, "orphan": orphan_amt,
+        "over90": over90, "over90_joined": over90_joined,
+        "gl_debits": gl_debits, "gl_credits": gl_credits,
+        "over_limit": over_limit,
+    }
+
+
 if __name__ == "__main__":
     pl = build_messy_pl()
     gl, bank, gl_close, bank_close, adj = build_ledger_and_bank()
     ba = build_budget_actual()
     ar = build_ar_aging()
     invs = build_invoices()
+    dbsql, dbstats = build_database()
 
     print(f"P&L            {pl}")
     print(f"GL             {gl}")
@@ -684,3 +924,7 @@ if __name__ == "__main__":
     print(f"  Bank closing balance  {bank_close:>14,.2f}")
     print(f"  Difference            {gl_close - bank_close:>14,.2f}")
     print(f"  Adjusted (both sides)  {adj:>14,.2f}")
+    print()
+    print(f"DB script      {dbsql}")
+    for k, v in dbstats.items():
+        print(f"  {k:<16} {v}")

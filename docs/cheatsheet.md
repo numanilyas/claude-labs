@@ -113,3 +113,64 @@ diff in one sentence.
 - `git diff` the **test files** before committing
 - After two failed corrections, `/clear` and rewrite the prompt
 - Checkpoints don't cover shell-driven changes. Commit first.
+
+## SQL and Python
+
+### The words that do most of the work
+
+```sql
+SELECT   which columns
+FROM     which table
+WHERE    which rows          -- filters rows, before grouping
+GROUP BY one output row per  -- everything else must be SUM/COUNT/MAX
+HAVING   which groups        -- filters groups, after grouping
+ORDER BY DESC / ASC
+LIMIT    stop after n
+```
+
+### The control total
+
+```sql
+SELECT COUNT(*), SUM(amount) FROM your_table;
+```
+
+No joins, no filters, no grouping. Run it first. Every aggregate you build
+afterwards has to tie back to it, and if it doesn't you have a finding.
+
+### How a query lies
+
+| | Symptom | Catch it with |
+|---|---|---|
+| `INNER JOIN` drops unmatched rows | Total is quietly light | `LEFT JOIN` + `WHERE right.id IS NULL` |
+| `NULL` and `''` aren't the same | A filter finds most of them | `WHERE col IS NULL OR col = ''` |
+| `GROUP BY` splits the no-value rows | They scatter across two easy-to-skim lines | `GROUP BY COALESCE(NULLIF(col,''),'(not set)')` |
+| A join fans out | Total is quietly heavy | Compare `COUNT(*)` before and after |
+
+The first three are in the Data Track's sample database. `NULL = NULL` is not
+true — always `IS NULL`.
+
+### SQL or Python
+
+**Reduce in SQL, shape and deliver in Python.** Filtering, joining, grouping
+and all money arithmetic belong in the query — `DECIMAL` is exact and pandas
+turns it into a float. Formatting, looping, Excel output, anything touching a
+second source, and anything conditional belong in Python.
+
+If you're filtering or grouping a big DataFrame in pandas, that work belonged
+in the query.
+
+### Connecting
+
+```python
+import pandas as pd
+from sqlalchemy import create_engine, text
+
+engine = create_engine("mysql+mysqlconnector://user:pw@127.0.0.1/dbname")
+query = text("SELECT ... WHERE period = :period")
+
+with engine.connect() as cnx:
+    df = pd.read_sql(query, cnx, params={"period": "2026-06"})
+```
+
+`text()` and `params` are a pair — named placeholders don't work without it.
+Never build SQL with an f-string.

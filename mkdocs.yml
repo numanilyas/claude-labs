@@ -1,7 +1,7 @@
 site_name: Claude Labs
 site_description: Short, hands-on labs for getting real work done with Claude.
-site_url: https://CHANGE-ME.github.io/claude-labs/
-repo_url: https://github.com/CHANGE-ME/claude-labs
+site_url: https://numanilyas.github.io/claude-labs/
+repo_url: https://github.com/numanilyas/claude-labs
 repo_name: claude-labs
 edit_uri: edit/main/docs/
 
@@ -92,7 +92,7 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/CHANGE-ME/claude-labs
+      link: https://github.com/numanilyas/claude-labs
   generator: false
 
 copyright: >

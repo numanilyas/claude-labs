@@ -1,0 +1,108 @@
+:root {
+  --md-primary-fg-color:        #1f4d7a;
+  --md-primary-fg-color--light: #2f6ea8;
+  --md-primary-fg-color--dark:  #143552;
+  --md-accent-fg-color:         #c2703d;
+  --md-accent-fg-color--transparent: rgba(194, 112, 61, 0.1);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color:        #6aa3d5;
+  --md-primary-fg-color--light: #8bbbe4;
+  --md-primary-fg-color--dark:  #16324d;
+  --md-accent-fg-color:         #e0975f;
+  --md-hue: 215;
+}
+
+/* ---- lab metadata strip under the H1 ---- */
+.lab-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem .75rem;
+  margin: -.4rem 0 1.4rem;
+  font-size: .72rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.lab-meta span {
+  background: var(--md-default-fg-color--lightest);
+  border-radius: 3px;
+  padding: .22rem .55rem;
+  color: var(--md-default-fg-color--light);
+  font-weight: 600;
+}
+.lab-meta span.time {
+  background: var(--md-accent-fg-color--transparent);
+  color: var(--md-accent-fg-color);
+}
+
+/* ---- the copy-me prompt block ---- */
+.prompt > .admonition-title,
+.prompt > summary {
+  background: var(--md-accent-fg-color--transparent) !important;
+}
+.prompt {
+  border-left-color: var(--md-accent-fg-color) !important;
+}
+
+/* ---- make code blocks inside prompts read like prose, not code ---- */
+.prompt pre code,
+.prompt code {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: .78rem;
+  line-height: 1.55;
+}
+
+/* ---- the "now do it yourself" closer ---- */
+.yours {
+  border-left: 3px solid var(--md-primary-fg-color);
+  background: var(--md-default-fg-color--lightest);
+  padding: .9rem 1rem .3rem;
+  border-radius: 0 4px 4px 0;
+  margin: 1.6rem 0;
+}
+.yours p:first-child { margin-top: 0; }
+
+/* ---- lab index cards ---- */
+.grid.cards > ul > li {
+  border-radius: 6px;
+}
+.grid.cards > ul > li > hr {
+  margin: .6rem 0;
+}
+
+/* Hide the header row on headerless (two-column definition) tables.
+   Only fires when every th is empty. */
+.md-typeset table:not([class]) thead:has(th:empty):not(:has(th:not(:empty))) {
+  display: none;
+}
+
+/* ---- tighten tables a touch ---- */
+.md-typeset table:not([class]) th {
+  background: var(--md-default-fg-color--lightest);
+  font-size: .74rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.md-typeset table:not([class]) td {
+  font-size: .78rem;
+}
+
+/* ---- numbered step lists ---- */
+.md-typeset ol > li {
+  margin-bottom: .35rem;
+}
+
+.md-typeset h2 {
+  margin-top: 2.2rem;
+  padding-top: .6rem;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+.md-typeset h1 + .lab-meta + h2 { border-top: none; }
+
+/* download links list */
+.dl a {
+  font-family: var(--md-code-font-family);
+  font-size: .8rem;
+}

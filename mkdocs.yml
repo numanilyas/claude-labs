@@ -1,0 +1,143 @@
+site_name: Claude Labs
+site_description: Short, hands-on labs for getting real work done with Claude.
+site_url: https://CHANGE-ME.github.io/claude-labs/
+repo_url: https://github.com/CHANGE-ME/claude-labs
+repo_name: claude-labs
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+    admonition:
+      note: material/pencil-outline
+      tip: material/lightbulb-on-outline
+      warning: material/alert-outline
+      danger: material/skull-outline
+      example: material/flask-outline
+      quote: material/format-quote-close
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - content.tooltips
+    - content.action.edit
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - search.share
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.keys
+
+plugins:
+  - search
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/CHANGE-ME/claude-labs
+  generator: false
+
+copyright: >
+  Sample data is fictional. Nothing here is affiliated with Anthropic.
+
+nav:
+  - Home:
+      - index.md
+      - start-here.md
+      - how-to-run-a-session.md
+  - Finance Track:
+      - finance/index.md
+      - Talking to Claude:
+          - finance/01-a-prompt-that-works.md
+          - finance/02-give-claude-your-data.md
+          - finance/03-projects.md
+      - Cowork - let Claude do the work:
+          - finance/04-messy-excel.md
+          - finance/05-pdfs-to-spreadsheet.md
+          - finance/06-reconciliation.md
+          - finance/07-variance-memo.md
+      - Skills - make it repeatable:
+          - finance/08-your-first-skill.md
+          - finance/09-house-style-skill.md
+      - Automate and verify:
+          - finance/10-scheduled-tasks.md
+          - finance/11-verify-before-you-send.md
+          - finance/12-what-not-to-paste.md
+  - Developer Track:
+      - dev/index.md
+      - Foundations:
+          - dev/01-setup.md
+          - dev/02-claude-md.md
+          - dev/03-explore-plan-implement.md
+      - Daily driver:
+          - dev/04-code-review.md
+          - dev/05-tests-and-debugging.md
+          - dev/06-big-refactors.md
+      - Extending Claude:
+          - dev/07-skills.md
+          - dev/08-subagents-and-hooks.md
+          - dev/09-mcp-server.md
+          - dev/10-agent-sdk.md
+  - Reference:
+      - cheatsheet.md
+      - prompt-library.md
+      - sample-data.md
+      - facilitator.md
